@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard Kamehameha - Bio-Dojo Smart-Learning Platform</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- PapaParse for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif']
+                    },
+                    colors: {
+                        primary: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d'
+                        },
+                        accent: {
+                            500: '#f97316',
+                            600: '#ea580c',
+                            700: '#c2410c'
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-emerald-500 selection:text-white">
+
+    <header class="bg-slate-800/90 backdrop-blur-md border-b border-orange-500/30 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-emerald-500 via-teal-500 to-orange-500 p-2.5 rounded-xl shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-bolt text-white text-xl animate-pulse"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-lg font-extrabold bg-gradient-to-r from-emerald-400 via-amber-300 to-orange-400 bg-clip-text text-transparent">Flashcard Kamehameha</h1>
+                        <!-- Cloud/Local Status Indicator Badge -->
+                        <span id="cloudStatusBadge" onclick="openFirebaseSettingsModal()" class="cursor-pointer inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-950/80 text-amber-400 border border-amber-500/40 hover:border-amber-400 transition-all" title="Klik untuk tetapan sambungan Awan / Firebase">
+                            <i id="cloudStatusIcon" class="fa-solid fa-hard-drive text-[9px]"></i> 
+                            <span id="cloudStatusText">Mod Tempatan</span>
+                        </span>
+                    </div>
+                    <p class="text-xs font-medium text-orange-300/80 hidden sm:block">Bio-Dojo Smart-Learning Platform</p>
+                </div>
+            </div>
+
+            <!-- Global Actions & Role Controls -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button id="btnStudentEmail" onclick="openStudentEmailModal()" class="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-600 bg-slate-700/60 hover:bg-slate-700 text-slate-200 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-envelope text-amber-400"></i>
+                    <span id="studentEmailLabel" class="hidden md:inline">Emel Murid</span>
+                </button>
+
+                <button id="btnRoleToggle" onclick="handleRoleToggle()" class="px-3 py-1.5 text-xs font-bold rounded-xl border transition-all duration-200 flex items-center gap-1.5 bg-slate-700/80 border-slate-600 text-slate-200 hover:border-orange-400">
+                    <i id="roleIcon" class="fa-solid fa-user-graduate text-emerald-400"></i>
+                    <span id="roleLabel">Mod: Murid</span>
+                </button>
+
+                <!-- Admin Only Controls -->
+                <div id="adminActions" class="hidden items-center space-x-2">
+                    <button onclick="openCSVModal()" class="px-3 py-1.5 text-xs sm:text-sm font-semibold text-emerald-300 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 rounded-xl transition-all duration-200 flex items-center space-x-1.5 shadow-sm">
+                        <i class="fa-solid fa-file-csv text-base"></i>
+                        <span class="hidden md:inline">Muat Naik / Eksport</span>
+                    </button>
+                    <button onclick="openAddCardModal()" class="px-3 py-1.5 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-emerald-600 to-orange-500 hover:from-emerald-500 hover:to-orange-400 rounded-xl shadow-md shadow-orange-500/20 transition-all duration-200 flex items-center space-x-1.5">
+                        <i class="fa-solid fa-plus"></i>
+                        <span class="hidden sm:inline">Tambah Kad</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col space-y-6">
+        
+        <section class="bg-slate-800/60 border border-emerald-500/30 rounded-2xl p-4 sm:p-5 shadow-xl shadow-emerald-950/20">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                <!-- Topic Selection Dropdown -->
+                <div class="md:col-span-7 flex flex-col space-y-1.5">
+                    <label for="topicSelect" class="text-xs font-bold text-orange-400 tracking-wider uppercase flex items-center gap-2">
+                        <i class="fa-solid fa-dragon text-emerald-400"></i> Sila Pilih Bab / Topik Bio-Dojo:
+                    </label>
+                    <select id="topicSelect" onchange="onTopicChange(this.value)" class="w-full bg-slate-900 text-slate-100 border border-slate-700 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <!-- Mode Switcher Tabs -->
+                <div class="md:col-span-5 flex items-center justify-start md:justify-end bg-slate-900/90 p-1 rounded-xl border border-slate-700/80 overflow-x-auto">
+                    <button id="btnModeFlashcard" onclick="switchMode('flashcard')" class="flex-1 min-w-[75px] py-2 px-3 text-xs font-bold rounded-lg transition-all bg-gradient-to-r from-emerald-600 to-orange-500 text-white shadow flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-clone"></i> Kad
+                    </button>
+                    <button id="btnModeQuiz" onclick="switchMode('quiz')" class="flex-1 min-w-[75px] py-2 px-3 text-xs font-bold rounded-lg transition-all text-slate-300 hover:text-white flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-circle-question"></i> Kuiz
+                    </button>
+                    <button id="btnModeTyping" onclick="switchMode('typing')" class="flex-1 min-w-[75px] py-2 px-3 text-xs font-bold rounded-lg transition-all text-slate-300 hover:text-white flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-keyboard"></i> Taip
+                    </button>
+                    <button id="btnModeMatch" onclick="switchMode('match')" class="flex-1 min-w-[75px] py-2 px-3 text-xs font-bold rounded-lg transition-all text-slate-300 hover:text-white flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-puzzle-piece"></i> Padan
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Bar -->
+        <div id="deckInfoBar" class="flex flex-wrap items-center justify-between text-xs sm:text-sm text-slate-400 bg-slate-800/40 px-4 py-2.5 rounded-xl border border-slate-700/60 gap-2">
+            <div class="flex items-center space-x-3">
+                <span><strong class="text-orange-400" id="deckTotalCards">0</strong> Kad Dijumpai</span>
+                <span>•</span>
+                <span>Dikuasai: <strong class="text-emerald-400" id="deckMasteredCount">0</strong></span>
+            </div>
+            <div class="w-full sm:w-48 bg-slate-700/60 rounded-full h-2.5 overflow-hidden">
+                <div id="deckProgressBar" class="bg-gradient-to-r from-emerald-500 to-orange-500 h-full w-0 transition-all duration-300"></div>
+            </div>
+        </div>
+
+        <section id="viewFlashcard" class="flex flex-col items-center justify-center my-auto min-h-[420px] py-4">
+            <div class="w-full max-w-2xl perspective-1000">
+                <div id="flashcardElement" onclick="flipCard()" class="relative w-full h-80 sm:h-96 rounded-3xl transition-transform duration-500 transform-style-3d cursor-pointer shadow-2xl group border border-orange-500/30 bg-slate-800">
+                    
+                    <!-- Front Side -->
+                    <div class="absolute inset-0 w-full h-full backface-hidden rounded-3xl p-6 sm:p-10 flex flex-col justify-between bg-gradient-to-b from-slate-800 via-slate-850 to-slate-900 border-2 border-emerald-500/20">
+                        <div class="flex justify-between items-center text-xs font-semibold text-slate-400">
+                            <span class="bg-emerald-950/80 px-3 py-1 rounded-full text-emerald-400 border border-emerald-500/40 font-bold">SOALAN</span>
+                            <span id="flashcardCounter" class="text-orange-400 font-bold">1 / 1</span>
+                        </div>
+                        <div class="my-auto text-center px-2 sm:px-6">
+                            <h2 id="flashcardQuestion" class="text-lg sm:text-2xl font-bold text-slate-100 leading-relaxed">Sila pilih topik untuk memulakan.</h2>
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-slate-400 pt-2 border-t border-slate-700/50">
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-rotate text-orange-400"></i> Tekan untuk lihat jawapan</span>
+                            <button id="btnSmartHint" onclick="toggleHint(event)" class="text-amber-400 hover:text-amber-300 font-semibold px-3 py-1.5 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 transition-all flex items-center gap-1.5 border border-amber-500/30 shadow-sm">
+                                <i class="fa-solid fa-lightbulb text-amber-400 animate-pulse"></i> Hint Silibus
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Back Side -->
+                    <div class="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-3xl p-6 sm:p-10 flex flex-col justify-between bg-gradient-to-b from-slate-800 via-slate-850 to-orange-950/40 border-2 border-orange-500/50">
+                        <div class="flex justify-between items-center text-xs font-semibold text-slate-400">
+                            <span class="bg-orange-500/20 text-orange-300 px-3 py-1 rounded-full border border-orange-500/40 font-bold">JAWAPAN</span>
+                            <span id="flashcardCounterBack" class="text-emerald-400 font-bold">1 / 1</span>
+                        </div>
+                        <div class="my-auto text-center px-2 sm:px-6">
+                            <p id="flashcardAnswer" class="text-base sm:text-xl font-medium text-amber-100 leading-relaxed">Jawapan akan ditunjukkan di sini.</p>
+                        </div>
+                        <div class="text-center text-xs text-slate-400 pt-2 border-t border-slate-700/50">
+                            <span class="flex items-center justify-center gap-1.5"><i class="fa-solid fa-rotate text-emerald-400"></i> Tekan untuk balik semula</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Single-Sentence Hint Box Overlay -->
+            <div id="hintBox" class="hidden w-full max-w-2xl mt-4 bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs sm:text-sm p-4 rounded-2xl transition-all shadow-lg">
+                <div class="flex items-center gap-3">
+                    <div class="p-2.5 bg-amber-500/20 rounded-xl text-amber-400 shrink-0">
+                        <i class="fa-solid fa-lightbulb text-lg"></i>
+                    </div>
+                    <div class="flex-grow">
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-amber-400 mb-0.5">Petunjuk / Klu Jawapan:</p>
+                        <p id="hintSentenceText" class="text-amber-100 font-semibold leading-relaxed text-xs sm:text-sm"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flashcard Navigation Controls -->
+            <div class="flex items-center justify-between w-full max-w-2xl mt-6 gap-3">
+                <button onclick="prevCard()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> Sebelum
+                </button>
+
+                <button id="btnToggleMastered" onclick="toggleMastered()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-emerald-400 text-sm border border-slate-700 transition flex items-center gap-2">
+                    <i id="iconMastered" class="fa-regular fa-star text-base"></i>
+                    <span id="labelMastered" class="hidden sm:inline">Kuasai</span>
+                </button>
+
+                <button onclick="nextCard()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-orange-500 hover:from-emerald-500 hover:to-orange-400 text-white font-semibold text-sm shadow-lg shadow-orange-500/20 transition flex items-center gap-2">
+                     Seterusnya <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <section id="viewQuiz" class="hidden flex-col items-center justify-center max-w-3xl mx-auto w-full my-auto py-4 space-y-6">
+            <div class="w-full bg-slate-800/80 border border-emerald-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-700/60 pb-4">
+                    <span class="text-xs font-bold text-orange-400 bg-orange-950/60 px-3 py-1 rounded-full border border-orange-500/30">KUIZ MULTIPLE CHOICE</span>
+                    <span id="quizScoreText" class="text-xs sm:text-sm font-semibold text-slate-300">Skor: 0 / 0</span>
+                </div>
+
+                <div class="space-y-2">
+                    <p class="text-xs text-emerald-400 uppercase tracking-wider font-bold" id="quizQuestionNum">Soalan 1</p>
+                    <h3 id="quizQuestionText" class="text-lg sm:text-xl font-bold text-slate-100 leading-snug">Soalan kuiz akan dipaparkan di sini...</h3>
+                </div>
+
+                <div id="quizOptionsContainer" class="grid grid-cols-1 gap-3 pt-2">
+                    <!-- MCQ options populated dynamically -->
+                </div>
+
+                <div id="quizFeedback" class="hidden p-4 rounded-xl text-sm font-semibold text-center border"></div>
+
+                <div class="flex justify-end pt-2">
+                    <button id="btnNextQuiz" onclick="nextQuizQuestion()" class="hidden px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-orange-500 hover:from-emerald-500 hover:to-orange-400 text-white font-semibold text-sm rounded-xl shadow-lg transition">
+                        Soalan Seterusnya <i class="fa-solid fa-chevron-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="viewTyping" class="hidden flex-col items-center justify-center max-w-2xl mx-auto w-full my-auto py-4 space-y-6">
+            <div class="w-full bg-slate-800/80 border border-slate-700 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-700/60 pb-4">
+                    <span class="text-xs font-bold text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-500/30">LATIHAN MENAIP JAWAPAN</span>
+                    <span id="typingProgressText" class="text-xs font-semibold text-orange-400">1 / 1</span>
+                </div>
+
+                <div class="space-y-2">
+                    <span class="text-xs text-slate-400 uppercase font-semibold">Soalan / Istilah:</span>
+                    <h3 id="typingQuestionText" class="text-lg sm:text-xl font-bold text-slate-100">Apakah definisi sel?</h3>
+                </div>
+
+                <form onsubmit="checkTypingAnswer(event)" class="space-y-4">
+                    <div>
+                        <label for="typingInput" class="block text-xs font-medium text-slate-400 mb-1">Taip jawapan anda di bawah:</label>
+                        <input type="text" id="typingInput" autocomplete="off" placeholder="Taip jawapan di sini..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition">
+                    </div>
+                    
+                    <div class="flex items-center justify-between gap-3">
+                        <button type="button" onclick="showTypingHint()" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs sm:text-sm font-medium rounded-xl transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-lightbulb text-amber-400"></i> Hint Silibus
+                        </button>
+                        <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold rounded-xl shadow-lg transition">
+                            Semak Jawapan <i class="fa-solid fa-paper-plane ml-1"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <div id="typingFeedback" class="hidden p-4 rounded-xl text-sm font-medium border space-y-1"></div>
+            </div>
+        </section>
+
+        <section id="viewMatch" class="hidden flex-col items-center justify-center max-w-4xl mx-auto w-full my-auto py-4 space-y-4">
+            <div class="w-full flex items-center justify-between bg-slate-800/80 px-6 py-3 rounded-2xl border border-slate-700">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-stopwatch text-orange-400"></i>
+                    <span class="text-xs sm:text-sm font-bold text-slate-200">Masa: <span id="matchTimer" class="text-emerald-400">0s</span></span>
+                </div>
+                <button onclick="initMatchingGame()" class="px-3.5 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> Mulakan Semula
+                </button>
+            </div>
+
+            <!-- Matching Grid -->
+            <div id="matchingGrid" class="w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                <!-- Populated dynamically -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Admin Login Modal -->
+    <div id="adminPasswordModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-orange-500/50 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div class="p-5 border-b border-slate-700/80 flex justify-between items-center bg-slate-850">
+                <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-lock text-orange-400"></i> Log Masuk Mod Admin
+                </h3>
+                <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="verifyAdminPassword(event)" class="p-6 space-y-4">
+                <p class="text-xs text-slate-300">Sila masukkan kata laluan Pentadbir (Admin) untuk mengakses fungsi muat naik/eksport CSV dan menambah kad imbas.</p>
+                <div>
+                    <label for="adminPasswordInput" class="block text-xs font-semibold text-orange-400 mb-1">Kata Laluan Admin:</label>
+                    <input type="password" id="adminPasswordInput" placeholder="Masukkan kata laluan..." required autocomplete="off" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div id="adminPasswordError" class="hidden text-xs font-semibold text-rose-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-exclamation"></i> Kata laluan salah. Sila cuba lagi.
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeAdminModal()" class="px-4 py-2 text-xs font-semibold bg-slate-700 text-slate-300 rounded-xl hover:bg-slate-600 transition">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2 text-xs font-bold bg-gradient-to-r from-emerald-600 to-orange-500 text-white rounded-xl hover:from-emerald-500 hover:to-orange-400 shadow-md transition">
+                        Log Masuk Admin
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Student Email Setup Modal -->
+    <div id="studentEmailModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-emerald-500/50 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div class="p-5 border-b border-slate-700/80 flex justify-between items-center bg-slate-850">
+                <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-id-card text-emerald-400"></i> Set Profil / Emel Murid
+                </h3>
+                <button onclick="closeStudentEmailModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="handleStudentEmailSubmit(event)" class="p-6 space-y-4">
+                <p class="text-xs text-slate-300">Masukkan emel anda (cth: <i>g-12345678@moe-dl.edu.my</i>) untuk menyimpan dan menyelaraskan rekod hafalan anda dari peranti lain.</p>
+                <div>
+                    <label for="studentEmailInput" class="block text-xs font-semibold text-emerald-400 mb-1">Emel Murid / Sekolah:</label>
+                    <input type="email" id="studentEmailInput" placeholder="cth: murid@gmail.com" required class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeStudentEmailModal()" class="px-4 py-2 text-xs font-semibold bg-slate-700 text-slate-300 rounded-xl hover:bg-slate-600 transition">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2 text-xs font-bold bg-emerald-600 text-white rounded-xl hover:bg-emerald-500 shadow-md transition">
+                        Simpan Emel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase Connection Settings Modal -->
+    <div id="firebaseSettingsModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-sky-500/50 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div class="p-5 border-b border-slate-700/80 flex justify-between items-center bg-slate-850">
+                <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-cloud text-sky-400"></i> Tetapan Sambungan Awan (Firebase)
+                </h3>
+                <button onclick="closeFirebaseSettingsModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="handleFirebaseSettingsSubmit(event)" class="p-6 space-y-4">
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Secara lalai, aplikasi ini berjalan dalam <strong class="text-emerald-400">Mod Tempatan (LocalStorage)</strong> yang pantas dan selamat. 
+                    Sekiranya anda mempunyai Projek Firebase Firestore sendiri, anda boleh memasukkan konfigurasi JSON atau API Key di bawah untuk fungsi penyelarasan Awan.
+                </p>
+                <div>
+                    <label for="customFirebaseConfigInput" class="block text-xs font-semibold text-sky-400 mb-1">Konfigurasi Firebase (JSON / Objek):</label>
+                    <textarea id="customFirebaseConfigInput" rows="5" placeholder='{"apiKey": "...", "authDomain": "...", "projectId": "..."}' class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-xl p-3 font-mono focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
+                </div>
+                <div class="flex items-center justify-between pt-2">
+                    <button type="button" onclick="clearFirebaseConfig()" class="px-3.5 py-1.5 text-xs font-semibold text-rose-300 bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 rounded-xl transition">
+                        Guna Mod Tempatan Sahaja
+                    </button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="closeFirebaseSettingsModal()" class="px-4 py-2 text-xs font-semibold bg-slate-700 text-slate-300 rounded-xl hover:bg-slate-600 transition">
+                            Batal
+                        </button>
+                        <button type="submit" class="px-5 py-2 text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white rounded-xl shadow-md transition">
+                            Simpan & Sambung Awan
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CSV Modal -->
+    <div id="csvModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-emerald-500/40 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div class="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-850">
+                <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-file-csv text-emerald-400"></i> Muat Naik / Eksport CSV
+                </h3>
+                <button onclick="closeCSVModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-5">
+                <div>
+                    <label class="block text-xs font-semibold text-orange-400 mb-1">Sasaran Bab / Topik:</label>
+                    <select id="csvTargetTopicSelect" class="w-full bg-slate-900 text-slate-100 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-medium focus:ring-2 focus:ring-orange-500">
+                        <option value="AUTO">-- Auto Detect daripada CSV --</option>
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div id="dropZone" class="border-2 border-dashed border-slate-600 rounded-2xl p-6 text-center hover:border-emerald-500 transition-all bg-slate-900/50 cursor-pointer" onclick="document.getElementById('csvFileInput').click()">
+                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-emerald-400 mb-2"></i>
+                    <p class="text-xs text-slate-200 font-semibold mb-1">Tarik & Lepaskan fail CSV di sini, atau klik untuk memilih fail</p>
+                    <p class="text-[11px] text-slate-400">Format disokong: CSV (lajur: BIDANG PEMBELAJARAN, SOALAN, JAWAPAN, PETUNJUK)</p>
+                    <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
+                </div>
+
+                <div class="flex items-center justify-between pt-2 border-t border-slate-700/80 gap-3">
+                    <button onclick="downloadCSVTemplate()" class="px-3.5 py-2 text-xs font-semibold text-amber-300 bg-amber-950/60 hover:bg-amber-900 border border-amber-500/40 rounded-xl transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-download"></i> Muat Turun Templat CSV
+                    </button>
+                    <button onclick="exportCSV()" class="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-export"></i> Eksport Dek Semasa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Flashcard Modal -->
+    <div id="addCardModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-orange-500/40 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div class="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-850">
+                <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-plus-circle text-orange-400"></i> Tambah Kad Imbas Baharu
+                </h3>
+                <button onclick="closeAddCardModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form onsubmit="handleAddCardSubmit(event)" class="p-6 space-y-4">
+                <div>
+                    <label for="addCardQuestion" class="block text-xs font-semibold text-orange-400 mb-1">Soalan / Istilah:</label>
+                    <textarea id="addCardQuestion" required rows="2" placeholder="Masukkan soalan..." class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-xl p-3 focus:ring-2 focus:ring-orange-500"></textarea>
+                </div>
+                <div>
+                    <label for="addCardAnswer" class="block text-xs font-semibold text-emerald-400 mb-1">Jawapan / Definisi:</label>
+                    <textarea id="addCardAnswer" required rows="3" placeholder="Masukkan jawapan..." class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-xl p-3 focus:ring-2 focus:ring-emerald-500"></textarea>
+                </div>
+                <div>
+                    <label for="addCardHint" class="block text-xs font-semibold text-amber-400 mb-1">Nota / Hint Khusus (Pilihan):</label>
+                    <input type="text" id="addCardHint" placeholder="Tinggalkan kosong untuk penjanaan automatik mengikut silibus..." class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeAddCardModal()" class="px-4 py-2 text-xs font-semibold bg-slate-700 text-slate-300 rounded-xl hover:bg-slate-600 transition">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2 text-xs font-bold bg-gradient-to-r from-emerald-600 to-orange-500 text-white rounded-xl hover:from-emerald-500 hover:to-orange-400 shadow transition">
+                        Simpan Kad
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <script>
+        let app = null;
+        let db = null;
+        let isCloudConnected = false;
+
+        const biologySyllabus = [
+            {
+                form: "Tingkatan 4",
+                topics: [
+                    { id: "T4_1.0", title: "1.0 Pengenalan kepada Biologi dan Peraturan Makmal" },
+                    { id: "T4_2.0", title: "2.0 Biologi Sel dan Organisasi Sel" },
+                    { id: "T4_3.0", title: "3.0 Pergerakan Bahan Merentasi Membran Plasma" },
+                    { id: "T4_4.0", title: "4.0 Komposisi Kimia dalam Sel" },
+                    { id: "T4_5.0", title: "5.0 Metabolisme dan Enzim" },
+                    { id: "T4_6.0", title: "6.0 Pembahagian Sel" },
+                    { id: "T4_7.0", title: "7.0 Respirasi Sel" },
+                    { id: "T4_8.0", title: "8.0 Sistem Respirasi dalam Manusia dan Haiwan" },
+                    { id: "T4_9.0", title: "9.0 Nutrisi dan Sistem Pencernaan Manusia" },
+                    { id: "T4_10.0", title: "10.0 Pengangkutan dalam Manusia dan Haiwan" },
+                    { id: "T4_11.0", title: "11.0 Keimunan Manusia" },
+                    { id: "T4_12.0", title: "12.0 Koordinasi dan Gerak Balas dalam Manusia" },
+                    { id: "T4_13.0", title: "13.0 Homeostasis dan Sistem Urinari Manusia" },
+                    { id: "T4_14.0", title: "14.0 Sokongan dan Pergerakan dalam Manusia dan Haiwan" },
+                    { id: "T4_15.0", title: "15.0 Pembiakan Seks, Perkembangan dan Pertumbuhan" }
+                ]
+            },
+            {
+                form: "Tingkatan 5",
+                topics: [
+                    { id: "T5_1.0", title: "1.0 Organisasi Tisu Tumbuhan dan Pertumbuhan" },
+                    { id: "T5_2.0", title: "2.0 Struktur dan Fungsi Daun" },
+                    { id: "T5_3.0", title: "3.0 Nutrisi dalam Tumbuhan" },
+                    { id: "T5_4.0", title: "4.0 Pengangkutan dalam Tumbuhan" },
+                    { id: "T5_5.0", title: "5.0 Gerak Balas dalam Tumbuhan" },
+                    { id: "T5_6.0", title: "6.0 Pembiakan Seks dalam Tumbuhan Berbunga" },
+                    { id: "T5_7.0", title: "7.0 Penyesuaian Tumbuhan pada Habitat Berlainan" },
+                    { id: "T5_8.0", title: "8.0 Biodiversiti" },
+                    { id: "T5_9.0", title: "9.0 Ekosistem" },
+                    { id: "T5_10.0", title: "10.0 Kelestarian Alam Sekitar" },
+                    { id: "T5_11.0", title: "11.0 Pewarisan" },
+                    { id: "T5_12.0", title: "12.0 Variasi" },
+                    { id: "T5_13.0", title: "13.0 Kejuruteraan Genetik dan Bioteknologi" }
+                ]
+            }
+        ];
+
+        let appDecks = {
+            "T4_1.0": {
+                title: "1.0 Pengenalan kepada Biologi dan Peraturan Makmal",
+                cards: [
+                    { id: 1, soalan: "Apakah istilah bagi kajian tentang kehidupan dan organisma hidup?", jawapan: "Biologi", hint: "", mastered: false },
+                    { id: 2, soalan: "Apakah kabinet khas dalam makmal yang digunakan untuk mengendalikan bahan toksik atau meruap?", jawapan: "Kebuk wasap", hint: "", mastered: false }
+                ]
+            },
+            "T4_2.0": {
+                title: "2.0 Biologi Sel dan Organisasi Sel",
+                cards: [
+                    { id: 101, soalan: "Apakah organel yang berfungsi sebagai tapak sintesis protein?", jawapan: "Ribosom", hint: "Terdiri daripada RNA dan protein.", mastered: false },
+                    { id: 102, soalan: "Apakah organel yang menjana tenaga dalam bentuk ATP?", jawapan: "Mitokondrion", hint: "Dikenali sebagai 'powerhouse' sel.", mastered: false },
+                    { id: 103, soalan: "Apakah struktur yang mengawal pergerakan bahan keluar dan masuk sel?", jawapan: "Membran plasma", hint: "", mastered: false },
+                    { id: 104, soalan: "Apakah komponen sel tumbuhan yang memberikan bentuk tetap dan sokongan mekanikal?", jawapan: "Dinding sel", hint: "", mastered: false }
+                ]
+            },
+            "T4_3.0": {
+                title: "3.0 Pergerakan Bahan Merentasi Membran Plasma",
+                cards: [
+                    { id: 201, soalan: "Apakah proses pergerakan molekul air dari kawasan keupayaan air tinggi ke kawasan keupayaan air rendah merentasi membran separa telap?", jawapan: "Osmosis", hint: "", mastered: false },
+                    { id: 202, soalan: "Apakah proses pergerakan bahan menentang kecerunan kepekatan yang memerlukan tenaga ATP?", jawapan: "Pengangkutan aktif", hint: "", mastered: false }
+                ]
+            },
+            "T4_5.0": {
+                title: "5.0 Metabolisme dan Enzim",
+                cards: [
+                    { id: 301, soalan: "Apakah hipotesis yang menerangkan tindakan enzim berdasarkan tapak aktif yang spesifik?", jawapan: "Hipotesis mangga dan kunci", hint: "", mastered: false },
+                    { id: 302, soalan: "Apakah komponen bukan protein yang diperlukan oleh sesetengah enzim untuk berfungsi?", jawapan: "Kofaktor", hint: "", mastered: false }
+                ]
+            }
+        };
+
+        let currentTopicKey = "T4_2.0";
+        let currentCardIndex = 0;
+        let isFlipped = false;
+        let activeMode = "flashcard";
+        let userRole = "murid";
+        let studentEmail = "";
+        let masteredCardsMap = {};
+
+        let quizScore = 0;
+        let quizCurrentIndex = 0;
+        let typingIndex = 0;
+
+        let matchCards = [];
+        let selectedMatchTiles = [];
+        let matchTimerInterval = null;
+        let matchSeconds = 0;
+
+        function loadLocalDecks() {
+            try {
+                const stored = localStorage.getItem('bio_kamehameha_decks');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    for (let key in parsed) {
+                        appDecks[key] = parsed[key];
+                    }
+                }
+                const savedEmail = localStorage.getItem('bio_kamehameha_student_email');
+                if (savedEmail) {
+                    studentEmail = savedEmail;
+                    updateStudentEmailUI();
+                }
+                const savedMastered = localStorage.getItem('bio_kamehameha_mastered');
+                if (savedMastered) {
+                    masteredCardsMap = JSON.parse(savedMastered);
+                }
+            } catch (e) {
+                console.warn("Gagal membaca localStorage:", e);
+            }
+        }
+
+        function saveLocalDecks() {
+            try {
+                localStorage.setItem('bio_kamehameha_decks', JSON.stringify(appDecks));
+                localStorage.setItem('bio_kamehameha_mastered', JSON.stringify(masteredCardsMap));
+            } catch (e) {
+                console.warn("Gagal menyimpan ke localStorage:", e);
+            }
+        }
+
+        async function initFirestoreSync() {
+            const savedFirebaseConfig = localStorage.getItem('bio_kamehameha_firebase_config');
+            if (!savedFirebaseConfig) {
+                updateCloudStatusUI(false, "Mod Tempatan");
+                return;
+            }
+
+            try {
+                const config = JSON.parse(savedFirebaseConfig);
+                if (!config || !config.apiKey || config.apiKey.includes('DemoKey')) {
+                    updateCloudStatusUI(false, "Mod Tempatan");
+                    return;
+                }
+
+                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js");
+                const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js");
+
+                app = initializeApp(config);
+                db = getFirestore(app);
+
+                const decksDocRef = doc(db, "flashcard_kamehameha", "shared_decks");
+
+                onSnapshot(decksDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const remoteDecks = docSnap.data();
+                        for (let key in remoteDecks) {
+                            appDecks[key] = remoteDecks[key];
+                        }
+                        isCloudConnected = true;
+                        updateCloudStatusUI(true, "Awan Terhubung");
+                        populateTopicDropdown();
+                        renderActiveTopic();
+                    } else {
+                        setDoc(decksDocRef, appDecks, { merge: true }).catch(err => console.warn(err));
+                    }
+                }, (error) => {
+                    console.warn("Firestore listener fallback to local mode:", error.message);
+                    isCloudConnected = false;
+                    updateCloudStatusUI(false, "Mod Tempatan");
+                });
+
+            } catch (e) {
+                console.warn("Firebase initialize fallback:", e);
+                isCloudConnected = false;
+                updateCloudStatusUI(false, "Mod Tempatan");
+            }
+        }
+
+        async function syncDecksToCloud() {
+            saveLocalDecks();
+            if (!db || !isCloudConnected) return;
+            try {
+                const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js");
+                const decksDocRef = doc(db, "flashcard_kamehameha", "shared_decks");
+                await setDoc(decksDocRef, appDecks, { merge: true });
+            } catch (e) {
+                console.warn("Error syncing decks to cloud:", e);
+            }
+        }
+
+        function updateCloudStatusUI(connected, text) {
+            const badge = document.getElementById('cloudStatusBadge');
+            const icon = document.getElementById('cloudStatusIcon');
+            const label = document.getElementById('cloudStatusText');
+            if (!badge || !label || !icon) return;
+
+            label.textContent = text;
+            if (connected) {
+                badge.className = "cursor-pointer inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/40 hover:border-emerald-400 transition-all";
+                icon.className = "fa-solid fa-cloud text-[9px]";
+            } else {
+                badge.className = "cursor-pointer inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-950/80 text-amber-400 border border-amber-500/40 hover:border-amber-400 transition-all";
+                icon.className = "fa-solid fa-hard-drive text-[9px]";
+            }
+        }
+
+        window.onload = function() {
+            loadLocalDecks();
+            populateTopicDropdown();
+            setupDragAndDrop();
+            updateRoleUI();
+            renderActiveTopic();
+            initFirestoreSync();
+        };
+
+        function populateTopicDropdown() {
+            const topicSelect = document.getElementById('topicSelect');
+            const targetSelect = document.getElementById('csvTargetTopicSelect');
+            
+            if (!topicSelect) return;
+            topicSelect.innerHTML = '';
+            if (targetSelect) {
+                targetSelect.innerHTML = '<option value="AUTO">-- Auto Detect daripada CSV --</option>';
+            }
+
+            biologySyllabus.forEach(group => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = group.form;
+
+                const targetOptgroup = document.createElement('optgroup');
+                targetOptgroup.label = group.form;
+
+                group.topics.forEach(t => {
+                    const option = document.createElement('option');
+                    option.value = t.id;
+                    const count = (appDecks[t.id] && appDecks[t.id].cards) ? appDecks[t.id].cards.length : 0;
+                    option.textContent = `${t.title} (${count} kad)`;
+                    optgroup.appendChild(option);
+
+                    if (targetSelect) {
+                        const tOption = document.createElement('option');
+                        tOption.value = t.id;
+                        tOption.textContent = t.title;
+                        targetOptgroup.appendChild(tOption);
+                    }
+                });
+
+                topicSelect.appendChild(optgroup);
+                if (targetSelect) targetSelect.appendChild(targetOptgroup);
+            });
+
+            if (!appDecks[currentTopicKey]) {
+                currentTopicKey = "T4_2.0";
+            }
+            topicSelect.value = currentTopicKey;
+        }
+
+        function onTopicChange(val) {
+            currentTopicKey = val;
+            currentCardIndex = 0;
+            isFlipped = false;
+            
+            if (!appDecks[currentTopicKey]) {
+                appDecks[currentTopicKey] = {
+                    title: getTopicTitleFromSyllabus(currentTopicKey),
+                    cards: []
+                };
+            }
+            renderActiveTopic();
+        }
+
+        function getTopicTitleFromSyllabus(key) {
+            for (let g of biologySyllabus) {
+                for (let t of g.topics) {
+                    if (t.id === key) return t.title;
+                }
+            }
+            return "Topik SPM";
+        }
+
+        function getCurrentCards() {
+            const rawCards = (appDecks[currentTopicKey] && appDecks[currentTopicKey].cards) ? appDecks[currentTopicKey].cards : [];
+            return rawCards.map(c => ({
+                ...c,
+                mastered: !!masteredCardsMap[c.id]
+            }));
+        }
+
+        function renderActiveTopic() {
+            const cards = getCurrentCards();
+            const total = cards.length;
+            const masteredCount = cards.filter(c => c.mastered).length;
+
+            document.getElementById('deckTotalCards').textContent = total;
+            document.getElementById('deckMasteredCount').textContent = masteredCount;
+
+            const progressPct = total > 0 ? Math.round((masteredCount / total) * 100) : 0;
+            document.getElementById('deckProgressBar').style.width = `${progressPct}%`;
+
+            if (activeMode === 'flashcard') {
+                updateFlashcardUI();
+            } else if (activeMode === 'quiz') {
+                initQuiz();
+            } else if (activeMode === 'typing') {
+                initTyping();
+            } else if (activeMode === 'match') {
+                initMatchingGame();
+            }
+        }
+
+        function switchMode(mode) {
+            activeMode = mode;
+
+            ['Flashcard', 'Quiz', 'Typing', 'Match'].forEach(m => {
+                const btn = document.getElementById(`btnMode${m}`);
+                if (!btn) return;
+                if (m.toLowerCase() === mode) {
+                    btn.className = "flex-1 min-w-[75px] py-2 px-3 text-xs font-bold rounded-lg transition-all bg-gradient-to-r from-emerald-600 to-orange-500 text-white shadow flex items-center justify-center gap-1.5";
+                } else {
+                    btn.className = "flex-1 min-w-[75px] py-2 px-3 text-xs font-bold rounded-lg transition-all text-slate-300 hover:text-white flex items-center justify-center gap-1.5";
+                }
+            });
+
+            document.getElementById('viewFlashcard').classList.toggle('hidden', mode !== 'flashcard');
+            document.getElementById('viewFlashcard').classList.toggle('flex', mode === 'flashcard');
+
+            document.getElementById('viewQuiz').classList.toggle('hidden', mode !== 'quiz');
+            document.getElementById('viewQuiz').classList.toggle('flex', mode === 'quiz');
+
+            document.getElementById('viewTyping').classList.toggle('hidden', mode !== 'typing');
+            document.getElementById('viewTyping').classList.toggle('flex', mode === 'typing');
+
+            document.getElementById('viewMatch').classList.toggle('hidden', mode !== 'match');
+            document.getElementById('viewMatch').classList.toggle('flex', mode === 'match');
+
+            renderActiveTopic();
+        }
+
+        function flipCard() {
+            const flashcardElement = document.getElementById('flashcardElement');
+            isFlipped = !isFlipped;
+            if (isFlipped) {
+                flashcardElement.classList.add('rotate-y-180');
+            } else {
+                flashcardElement.classList.remove('rotate-y-180');
+            }
+        }
+
+        function updateFlashcardUI() {
+            const cards = getCurrentCards();
+            const flashcardElement = document.getElementById('flashcardElement');
+            const hintBox = document.getElementById('hintBox');
+
+            isFlipped = false;
+            flashcardElement.classList.remove('rotate-y-180');
+            hintBox.classList.add('hidden');
+
+            if (cards.length === 0) {
+                document.getElementById('flashcardQuestion').textContent = "Tiada kad dalam topik ini lagi. Sila guna Mod Admin untuk muat naik/tambah kad baharu!";
+                document.getElementById('flashcardAnswer').textContent = "Tiada jawapan.";
+                document.getElementById('flashcardCounter').textContent = "0 / 0";
+                document.getElementById('flashcardCounterBack').textContent = "0 / 0";
+                return;
+            }
+
+            if (currentCardIndex >= cards.length) currentCardIndex = 0;
+            if (currentCardIndex < 0) currentCardIndex = cards.length - 1;
+
+            const card = cards[currentCardIndex];
+            document.getElementById('flashcardQuestion').textContent = card.soalan;
+            document.getElementById('flashcardAnswer').textContent = card.jawapan;
+            
+            const counterStr = `${currentCardIndex + 1} / ${cards.length}`;
+            document.getElementById('flashcardCounter').textContent = counterStr;
+            document.getElementById('flashcardCounterBack').textContent = counterStr;
+
+            const iconMastered = document.getElementById('iconMastered');
+            const labelMastered = document.getElementById('labelMastered');
+            if (card.mastered) {
+                iconMastered.className = "fa-solid fa-star text-amber-400";
+                labelMastered.textContent = "Dikuasai";
+            } else {
+                iconMastered.className = "fa-regular fa-star text-slate-400";
+                labelMastered.textContent = "Kuasai";
+            }
+        }
+
+        function prevCard() {
+            const cards = getCurrentCards();
+            if (cards.length === 0) return;
+            currentCardIndex--;
+            if (currentCardIndex < 0) currentCardIndex = cards.length - 1;
+            updateFlashcardUI();
+        }
+
+        function nextCard() {
+            const cards = getCurrentCards();
+            if (cards.length === 0) return;
+            currentCardIndex++;
+            if (currentCardIndex >= cards.length) currentCardIndex = 0;
+            updateFlashcardUI();
+        }
+
+        function generateSmartHint(ans, q, topicKey, customHint) {
+            if (customHint && customHint.trim() !== "") {
+                return customHint.trim();
+            }
+            if (!ans) return "Tiada petunjuk tersedia.";
+
+            const ansLower = ans.toLowerCase().trim();
+            const qLower = (q || "").toLowerCase().trim();
+
+            if (ansLower.includes("ribosom")) return "Struktur subselular kecil yang bertindak sebagai tapak utama sintesis protein.";
+            if (ansLower.includes("mitokondr")) return "Organel penjana tenaga sel dalam bentuk ATP melalui proses respirasi sel.";
+            if (ansLower.includes("membran plasma")) return "Lapisan separa telap yang mengawal pergerakan bahan masuk dan keluar dari sel.";
+            if (ansLower.includes("dinding sel")) return "Struktur tegar pada sel tumbuhan yang memberi bentuk tetap dan sokongan mekanikal.";
+            if (ansLower.includes("osmosis")) return "Pergerakan molekul air merentasi membran separa telap mengikut kecerunan keupayaan air.";
+            if (ansLower.includes("pengangkutan aktif")) return "Pergerakan bahan menentang kecerunan kepekatan yang memerlukan tenaga ATP.";
+            if (ansLower.includes("kebuk wasap")) return "Kabinet makmal khas untuk mengendalikan bahan kimia beracun atau mudah meruap.";
+            if (ansLower.includes("biologi")) return "Disiplin sains yang mengkaji organisma hidup dan proses fisiologi hayat.";
+            if (ansLower.includes("mangga dan kunci")) return "Hipotesis spesifisiti melibatkan tapak aktif enzim yang sepadan dengan substrat.";
+            if (ansLower.includes("kofaktor")) return "Bahan bukan protein yang membantu dan mengaktifkan tindak balas enzim.";
+
+            if (ansLower.endsWith("ase") || qLower.includes("enzim")) {
+                return "Ia merupakan sejenis pemangkin biokimia (enzim) yang memangkinkan tindak balas spesifik.";
+            }
+            if (qLower.includes("organel")) {
+                return "Ia merupakan salah satu organel khusus dengan fungsi spesifik di dalam sel.";
+            }
+            if (qLower.includes("proses") || qLower.includes("mekanisme")) {
+                return "Ia merupakan satu proses fisiologi penting bagi kemandirian organisma.";
+            }
+
+            const words = ans.trim().split(/\s+/);
+            if (words.length === 1) {
+                return `Istilah 1 perkataan (${ans.length} huruf) yang bermula dengan huruf '${ans.charAt(0).toUpperCase()}'.`;
+            } else {
+                const initials = words.map(w => w.charAt(0).toUpperCase()).join('.');
+                return `Istilah ${words.length} perkataan dengan huruf awal (${initials}.).`;
+            }
+        }
+
+        function toggleHint(e) {
+            if (e) e.stopPropagation();
+            const cards = getCurrentCards();
+            if (cards.length === 0) return;
+
+            const card = cards[currentCardIndex];
+            const hintBox = document.getElementById('hintBox');
+
+            if (hintBox.classList.contains('hidden')) {
+                const hintSentence = generateSmartHint(card.jawapan, card.soalan, currentTopicKey, card.hint);
+                document.getElementById('hintSentenceText').textContent = hintSentence;
+                hintBox.classList.remove('hidden');
+            } else {
+                hintBox.classList.add('hidden');
+            }
+        }
+
+        function toggleMastered() {
+            const cards = getCurrentCards();
+            if (cards.length === 0) return;
+
+            const currentCard = cards[currentCardIndex];
+            const newStatus = !currentCard.mastered;
+            
+            if (newStatus) {
+                masteredCardsMap[currentCard.id] = true;
+            } else {
+                delete masteredCardsMap[currentCard.id];
+            }
+
+            saveLocalDecks();
+            renderActiveTopic();
+            showToast(newStatus ? "Kad ditanda sebagai Dikuasai! ⭐" : "Kad ditanda semula.", "info");
+        }
+
+        function initQuiz() {
+            quizScore = 0;
+            quizCurrentIndex = 0;
+            renderQuizQuestion();
+        }
+
+        function renderQuizQuestion() {
+            const cards = getCurrentCards();
+            const container = document.getElementById('quizOptionsContainer');
+            const feedback = document.getElementById('quizFeedback');
+            const btnNext = document.getElementById('btnNextQuiz');
+
+            container.innerHTML = '';
+            feedback.classList.add('hidden');
+            btnNext.classList.add('hidden');
+
+            if (cards.length === 0) {
+                document.getElementById('quizQuestionNum').textContent = "SOALAN 0 / 0";
+                document.getElementById('quizQuestionText').textContent = "Tiada soalan untuk topik ini.";
+                document.getElementById('quizScoreText').textContent = "Skor: 0 / 0";
+                return;
+            }
+
+            if (quizCurrentIndex >= cards.length) {
+                document.getElementById('quizQuestionNum').textContent = "Selesai!";
+                document.getElementById('quizQuestionText').textContent = `Tahniah! Anda telah melengkapkan kuiz bagi topik ini dengan skor ${quizScore} / ${cards.length}.`;
+                return;
+            }
+
+            const currentCard = cards[quizCurrentIndex];
+            document.getElementById('quizQuestionNum').textContent = `SOALAN ${quizCurrentIndex + 1} / ${cards.length}`;
+            document.getElementById('quizQuestionText').textContent = currentCard.soalan;
+            document.getElementById('quizScoreText').textContent = `Skor: ${quizScore} / ${cards.length}`;
+
+            let distractors = cards.filter(c => c.id !== currentCard.id).map(c => c.jawapan);
+            const defaultDistractors = ["Mitos", "Prokariot", "Sitoplasma", "Kloroplas", "Respirasi", "Anabolisme"];
+            while (distractors.length < 3) {
+                const rand = defaultDistractors[Math.floor(Math.random() * defaultDistractors.length)];
+                if (!distractors.includes(rand) && rand !== currentCard.jawapan) distractors.push(rand);
+            }
+            
+            let choices = distractors.slice(0, 3);
+            choices.push(currentCard.jawapan);
+            choices.sort(() => Math.random() - 0.5);
+
+            choices.forEach((choice, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-xl border border-slate-700 bg-slate-900/80 hover:bg-slate-700/80 text-sm font-medium text-slate-200 transition flex items-center justify-between group";
+                btn.innerHTML = `
+                    <span><strong class="text-orange-400 mr-2">${String.fromCharCode(65 + idx)}.</strong> ${choice}</span>
+                    <i class="fa-regular fa-circle text-slate-500 group-hover:text-orange-400"></i>
+                `;
+                btn.onclick = () => selectQuizOption(choice, currentCard.jawapan, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectQuizOption(selected, correct, btnEl) {
+            const container = document.getElementById('quizOptionsContainer');
+            const buttons = container.querySelectorAll('button');
+            buttons.forEach(b => b.disabled = true);
+
+            const feedback = document.getElementById('quizFeedback');
+            const btnNext = document.getElementById('btnNextQuiz');
+
+            if (selected === correct) {
+                quizScore++;
+                btnEl.className = "w-full text-left p-4 rounded-xl border-2 border-emerald-500 bg-emerald-950/80 text-sm font-bold text-emerald-200 transition flex items-center justify-between";
+                feedback.className = "p-4 rounded-xl text-sm font-semibold text-center border border-emerald-500/50 bg-emerald-950/60 text-emerald-300";
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-2"></i> Tepat sekali! Jawapan anda betul.`;
+            } else {
+                btnEl.className = "w-full text-left p-4 rounded-xl border-2 border-rose-500 bg-rose-950/80 text-sm font-bold text-rose-200 transition flex items-center justify-between";
+                feedback.className = "p-4 rounded-xl text-sm font-semibold text-center border border-rose-500/50 bg-rose-950/60 text-rose-300";
+                feedback.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400 mr-2"></i> Kurang tepat. Jawapan sebenar: <strong>${correct}</strong>`;
+            }
+
+            feedback.classList.remove('hidden');
+            btnNext.classList.remove('hidden');
+        }
+
+        function nextQuizQuestion() {
+            quizCurrentIndex++;
+            renderQuizQuestion();
+        }
+
+        function initTyping() {
+            typingIndex = 0;
+            renderTypingQuestion();
+        }
+
+        function renderTypingQuestion() {
+            const cards = getCurrentCards();
+            const feedback = document.getElementById('typingFeedback');
+            const input = document.getElementById('typingInput');
+
+            input.value = '';
+            feedback.classList.add('hidden');
+
+            if (cards.length === 0) {
+                document.getElementById('typingProgressText').textContent = "0 / 0";
+                document.getElementById('typingQuestionText').textContent = "Tiada kad dalam topik ini.";
+                return;
+            }
+
+            if (typingIndex >= cards.length) typingIndex = 0;
+
+            const card = cards[typingIndex];
+            document.getElementById('typingProgressText').textContent = `${typingIndex + 1} / ${cards.length}`;
+            document.getElementById('typingQuestionText').textContent = card.soalan;
+        }
+
+        function checkTypingAnswer(e) {
+            e.preventDefault();
+            const cards = getCurrentCards();
+            if (cards.length === 0) return;
+
+            const inputVal = document.getElementById('typingInput').value.trim().toLowerCase();
+            const correctVal = cards[typingIndex].jawapan.trim().toLowerCase();
+            const feedback = document.getElementById('typingFeedback');
+
+            if (!inputVal) return;
+
+            if (inputVal === correctVal || correctVal.includes(inputVal)) {
+                feedback.className = "p-4 rounded-xl text-sm font-semibold border border-emerald-500/50 bg-emerald-950/60 text-emerald-300";
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-1.5"></i> Tahniah! Jawapan anda tepat.`;
+                setTimeout(() => {
+                    typingIndex = (typingIndex + 1) % cards.length;
+                    renderTypingQuestion();
+                }, 1500);
+            } else {
+                feedback.className = "p-4 rounded-xl text-sm font-semibold border border-rose-500/50 bg-rose-950/60 text-rose-300";
+                feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-400 mr-1.5"></i> Hampir tepat! Jawapan betul: <strong>${cards[typingIndex].jawapan}</strong>`;
+            }
+            feedback.classList.remove('hidden');
+        }
+
+        function showTypingHint() {
+            const cards = getCurrentCards();
+            if (cards.length === 0) return;
+            const card = cards[typingIndex];
+            const hintSentence = generateSmartHint(card.jawapan, card.soalan, currentTopicKey, card.hint);
+            showToast(`💡 Klu: ${hintSentence}`, "info");
+        }
+
+        function initMatchingGame() {
+            clearInterval(matchTimerInterval);
+            matchSeconds = 0;
+            selectedMatchTiles = [];
+            document.getElementById('matchTimer').textContent = "0s";
+
+            const cards = getCurrentCards();
+            const grid = document.getElementById('matchingGrid');
+            grid.innerHTML = '';
+
+            if (cards.length < 2) {
+                grid.innerHTML = `<p class="col-span-full text-center text-slate-400 py-8">Topik ini memerlukan sekurang-kurangnya 2 kad untuk memulakan permainan padanan.</p>`;
+                return;
+            }
+
+            let pool = [...cards].sort(() => Math.random() - 0.5).slice(0, 6);
+            let tiles = [];
+
+            pool.forEach(c => {
+                tiles.push({ cardId: c.id, text: c.soalan, type: 'Q' });
+                tiles.push({ cardId: c.id, text: c.jawapan, type: 'A' });
+            });
+
+            tiles.sort(() => Math.random() - 0.5);
+
+            tiles.forEach((tile, idx) => {
+                const div = document.createElement('div');
+                div.className = "bg-slate-800 border-2 border-slate-700 hover:border-orange-400/80 rounded-2xl p-4 min-h-[100px] flex items-center justify-center text-center cursor-pointer transition-all duration-200 text-xs sm:text-sm font-semibold select-none shadow-md";
+                div.textContent = tile.text;
+                div.dataset.cardId = tile.cardId;
+                div.dataset.index = idx;
+                div.dataset.matched = "false";
+
+                div.onclick = () => handleMatchTileClick(div, tile);
+                grid.appendChild(div);
+            });
+
+            matchTimerInterval = setInterval(() => {
+                matchSeconds++;
+                document.getElementById('matchTimer').textContent = `${matchSeconds}s`;
+            }, 1000);
+        }
+
+        function handleMatchTileClick(el, tile) {
+            if (el.dataset.matched === "true" || selectedMatchTiles.some(t => t.el === el)) return;
+
+            el.classList.add('border-amber-400', 'bg-amber-950/40');
+            selectedMatchTiles.push({ el, tile });
+
+            if (selectedMatchTiles.length === 2) {
+                const [first, second] = selectedMatchTiles;
+
+                if (first.tile.cardId === second.tile.cardId && first.tile.type !== second.tile.type) {
+                    setTimeout(() => {
+                        first.el.dataset.matched = "true";
+                        second.el.dataset.matched = "true";
+                        first.el.className = "bg-emerald-950/80 border-2 border-emerald-500 text-emerald-300 rounded-2xl p-4 min-h-[100px] flex items-center justify-center text-center text-xs sm:text-sm font-bold opacity-60 pointer-events-none transition-all";
+                        second.el.className = "bg-emerald-950/80 border-2 border-emerald-500 text-emerald-300 rounded-2xl p-4 min-h-[100px] flex items-center justify-center text-center text-xs sm:text-sm font-bold opacity-60 pointer-events-none transition-all";
+                        selectedMatchTiles = [];
+
+                        const remaining = document.querySelectorAll('#matchingGrid > div:not([data-matched="true"])');
+                        if (remaining.length === 0) {
+                            clearInterval(matchTimerInterval);
+                            showToast(`Hebat! Anda menyelesaikan padanan dalam masa ${matchSeconds} saat! 🎉`, "success");
+                        }
+                    }, 300);
+                } else {
+                    setTimeout(() => {
+                        first.el.classList.remove('border-amber-400', 'bg-amber-950/40');
+                        second.el.classList.remove('border-amber-400', 'bg-amber-950/40');
+                        selectedMatchTiles = [];
+                    }, 600);
+                }
+            }
+        }
+
+        function handleRoleToggle() {
+            if (userRole === 'admin') {
+                userRole = 'murid';
+                updateRoleUI();
+                showToast("Telah bertukar ke Mod Murid. 🎓", "info");
+            } else {
+                openAdminModal();
+            }
+        }
+
+        function openAdminModal() {
+            document.getElementById('adminPasswordInput').value = '';
+            document.getElementById('adminPasswordError').classList.add('hidden');
+            document.getElementById('adminPasswordModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('adminPasswordInput').focus(), 100);
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminPasswordModal').classList.add('hidden');
+        }
+
+        function verifyAdminPassword(e) {
+            e.preventDefault();
+            const pwd = document.getElementById('adminPasswordInput').value;
+            if (pwd === "1029") {
+                userRole = "admin";
+                closeAdminModal();
+                updateRoleUI();
+                showToast("Akses Admin Dibenarkan! 🔓", "success");
+            } else {
+                document.getElementById('adminPasswordError').classList.remove('hidden');
+            }
+        }
+
+        function updateRoleUI() {
+            const roleLabel = document.getElementById('roleLabel');
+            const roleIcon = document.getElementById('roleIcon');
+            const btnRoleToggle = document.getElementById('btnRoleToggle');
+            const adminActions = document.getElementById('adminActions');
+
+            if (userRole === 'admin') {
+                roleLabel.textContent = "Mod: Admin";
+                roleIcon.className = "fa-solid fa-user-gear text-orange-400";
+                btnRoleToggle.className = "px-3 py-1.5 text-xs font-bold rounded-xl border transition-all duration-200 flex items-center gap-1.5 bg-orange-950/80 border-orange-500/60 text-orange-200 hover:bg-orange-900";
+                adminActions.classList.remove('hidden');
+                adminActions.classList.add('flex');
+            } else {
+                roleLabel.textContent = "Mod: Murid";
+                roleIcon.className = "fa-solid fa-user-graduate text-emerald-400";
+                btnRoleToggle.className = "px-3 py-1.5 text-xs font-bold rounded-xl border transition-all duration-200 flex items-center gap-1.5 bg-slate-700/80 border-slate-600 text-slate-200 hover:border-orange-400";
+                adminActions.classList.add('hidden');
+                adminActions.classList.remove('flex');
+            }
+        }
+
+        function openStudentEmailModal() {
+            document.getElementById('studentEmailInput').value = studentEmail || '';
+            document.getElementById('studentEmailModal').classList.remove('hidden');
+        }
+
+        function closeStudentEmailModal() {
+            document.getElementById('studentEmailModal').classList.add('hidden');
+        }
+
+        function handleStudentEmailSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('studentEmailInput').value.trim();
+            if (email) {
+                studentEmail = email;
+                localStorage.setItem('bio_kamehameha_student_email', studentEmail);
+                updateStudentEmailUI();
+                closeStudentEmailModal();
+                showToast(`Profil emel disimpan: ${studentEmail}`, "success");
+            }
+        }
+
+        function updateStudentEmailUI() {
+            const label = document.getElementById('studentEmailLabel');
+            if (label) {
+                label.textContent = studentEmail ? studentEmail.split('@')[0] : "Emel Murid";
+            }
+        }
+
+        function openFirebaseSettingsModal() {
+            const stored = localStorage.getItem('bio_kamehameha_firebase_config') || '';
+            document.getElementById('customFirebaseConfigInput').value = stored;
+            document.getElementById('firebaseSettingsModal').classList.remove('hidden');
+        }
+
+        function closeFirebaseSettingsModal() {
+            document.getElementById('firebaseSettingsModal').classList.add('hidden');
+        }
+
+        function handleFirebaseSettingsSubmit(e) {
+            e.preventDefault();
+            const raw = document.getElementById('customFirebaseConfigInput').value.trim();
+            if (!raw) {
+                clearFirebaseConfig();
+                return;
+            }
+            try {
+                const parsed = JSON.parse(raw);
+                if (!parsed.apiKey) {
+                    showToast("Konfigurasi mestilah JSON yang sah mengandungi 'apiKey'.", "error");
+                    return;
+                }
+                localStorage.setItem('bio_kamehameha_firebase_config', JSON.stringify(parsed));
+                closeFirebaseSettingsModal();
+                showToast("Konfigurasi Firebase disimpan! Memuat semula...", "success");
+                setTimeout(() => window.location.reload(), 1000);
+            } catch (err) {
+                showToast("Format JSON tidak sah. Sila semak semula.", "error");
+            }
+        }
+
+        function clearFirebaseConfig() {
+            localStorage.removeItem('bio_kamehameha_firebase_config');
+            closeFirebaseSettingsModal();
+            updateCloudStatusUI(false, "Mod Tempatan");
+            showToast("Kembali ke Mod Tempatan (LocalStorage).", "info");
+        }
+
+        function openCSVModal() {
+            if (userRole !== 'admin') {
+                showToast("Fungsi ini hanya boleh diakses oleh Admin.", "error");
+                return;
+            }
+            document.getElementById('csvModal').classList.remove('hidden');
+        }
+
+        function closeCSVModal() {
+            document.getElementById('csvModal').classList.add('hidden');
+        }
+
+        function openAddCardModal() {
+            if (userRole !== 'admin') {
+                showToast("Fungsi ini hanya boleh diakses oleh Admin.", "error");
+                return;
+            }
+            document.getElementById('addCardModal').classList.remove('hidden');
+        }
+
+        function closeAddCardModal() {
+            document.getElementById('addCardModal').classList.add('hidden');
+        }
+
+        function handleAddCardSubmit(e) {
+            e.preventDefault();
+            const q = document.getElementById('addCardQuestion').value.trim();
+            const a = document.getElementById('addCardAnswer').value.trim();
+            let h = document.getElementById('addCardHint').value.trim();
+
+            if (!q || !a) return;
+
+            if (!appDecks[currentTopicKey]) {
+                appDecks[currentTopicKey] = {
+                    title: getTopicTitleFromSyllabus(currentTopicKey),
+                    cards: []
+                };
+            }
+
+            appDecks[currentTopicKey].cards.push({
+                id: Date.now(),
+                soalan: q,
+                jawapan: a,
+                hint: h,
+                mastered: false
+            });
+
+            syncDecksToCloud();
+            populateTopicDropdown();
+            renderActiveTopic();
+            closeAddCardModal();
+
+            document.getElementById('addCardQuestion').value = '';
+            document.getElementById('addCardAnswer').value = '';
+            document.getElementById('addCardHint').value = '';
+
+            showToast("Kad imbas berjaya ditambah!", "success");
+        }
+
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('dropZone');
+            if (!dropZone) return;
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('bg-emerald-950/40', 'border-emerald-500'), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('bg-emerald-950/40', 'border-emerald-500'), false);
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0) processCSVFile(files[0]);
+            });
+        }
+
+        function handleCSVUpload(event) {
+            const file = event.target.files[0];
+            if (file) processCSVFile(file);
+        }
+
+        function processCSVFile(file) {
+            if (!file) return;
+
+            const targetTopicSelect = document.getElementById('csvTargetTopicSelect');
+            const targetTopicOption = targetTopicSelect ? targetTopicSelect.value : 'AUTO';
+
+            Papa.parse(file, {
+                header: false,
+                skipEmptyLines: 'greedy',
+                trimHeaders: true,
+                complete: function(results) {
+                    const rows = results.data;
+                    if (!rows || rows.length === 0) {
+                        showToast("Fail CSV kosong atau tidak sah.", "error");
+                        return;
+                    }
+
+                    if (rows[0] && rows[0][0]) {
+                        rows[0][0] = String(rows[0][0]).replace(/^\uFEFF/, '');
+                    }
+
+                    let startIdx = 0;
+                    let colMap = { topic: -1, question: -1, answer: -1, hint: -1 };
+
+                    const firstRow = rows[0].map(c => String(c || '').trim().toLowerCase());
+                    const isHeaderRow = firstRow.some(cell => 
+                        cell.includes('soalan') || cell.includes('question') || cell.includes('front') || cell.includes('term') ||
+                        cell.includes('jawapan') || cell.includes('answer') || cell.includes('back') || cell.includes('maksud') ||
+                        cell.includes('bidang') || cell.includes('topik') || cell.includes('topic') || cell.includes('bab') ||
+                        cell.includes('hint') || cell.includes('petunjuk')
+                    );
+
+                    if (isHeaderRow) {
+                        startIdx = 1;
+                        firstRow.forEach((header, index) => {
+                            if (header.includes('bidang') || header.includes('topik') || header.includes('topic') || header.includes('bab')) {
+                                colMap.topic = index;
+                            } else if (header.includes('soalan') || header.includes('question') || header.includes('front')) {
+                                colMap.question = index;
+                            } else if (header.includes('jawapan') || header.includes('answer') || header.includes('back')) {
+                                colMap.answer = index;
+                            } else if (header.includes('hint') || header.includes('petunjuk')) {
+                                colMap.hint = index;
+                            }
+                        });
+                    }
+
+                    if (colMap.question === -1 || colMap.answer === -1) {
+                        colMap = { topic: -1, question: 0, answer: 1, hint: 2 };
+                    }
+
+                    let addedCount = 0;
+                    let lastKey = null;
+
+                    for (let i = startIdx; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (!row || row.length === 0) continue;
+
+                        const qText = colMap.question !== -1 && row[colMap.question] ? String(row[colMap.question]).trim() : '';
+                        const aText = colMap.answer !== -1 && row[colMap.answer] ? String(row[colMap.answer]).trim() : '';
+                        let hText = colMap.hint !== -1 && row[colMap.hint] ? String(row[colMap.hint]).trim() : '';
+                        let tText = colMap.topic !== -1 && row[colMap.topic] ? String(row[colMap.topic]).trim() : '';
+
+                        if (qText && aText) {
+                            let deckKey = targetTopicOption !== "AUTO" ? targetTopicOption : null;
+
+                            if (targetTopicOption === "AUTO" && tText) {
+                                const matchedKey = Object.keys(appDecks).find(k => 
+                                    appDecks[k].title.toLowerCase().includes(tText.toLowerCase()) ||
+                                    tText.toLowerCase().includes(appDecks[k].title.toLowerCase())
+                                );
+                                if (matchedKey) deckKey = matchedKey;
+                            }
+
+                            if (!deckKey) deckKey = currentTopicKey || "T4_2.0";
+
+                            if (!appDecks[deckKey]) {
+                                appDecks[deckKey] = {
+                                    title: tText || getTopicTitleFromSyllabus(deckKey),
+                                    cards: []
+                                };
+                            }
+
+                            appDecks[deckKey].cards.push({
+                                id: Date.now() + Math.floor(Math.random() * 1000) + i,
+                                soalan: qText,
+                                jawapan: aText,
+                                hint: hText,
+                                mastered: false
+                            });
+                            addedCount++;
+                            lastKey = deckKey;
+                        }
+                    }
+
+                    const fileInput = document.getElementById('csvFileInput');
+                    if (fileInput) fileInput.value = '';
+
+                    if (addedCount > 0) {
+                        syncDecksToCloud();
+                        populateTopicDropdown();
+                        closeCSVModal();
+                        if (lastKey) {
+                            document.getElementById('topicSelect').value = lastKey;
+                            onTopicChange(lastKey);
+                        }
+                        showToast(`Berjaya memuat naik ${addedCount} kad imbas! 🎉`, "success");
+                    } else {
+                        showToast("Tiada kad baharu ditambah. Sila pastikan format CSV mengandungi Soalan dan Jawapan.", "error");
+                    }
+                },
+                error: function(err) {
+                    showToast("Ralat membaca fail CSV: " + err.message, "error");
+                }
+            });
+        }
+
+        function downloadCSVTemplate() {
+            const bom = String.fromCharCode(0xFEFF);
+            const template = bom + "BIDANG PEMBELAJARAN,SOALAN,JAWAPAN,PETUNJUK\n" +
+                "2.0 Biologi Sel dan Organisasi Sel,Apakah tapak sintesis protein?,Ribosom,Struktur tanpa membran terdiri daripada RNA dan protein\n" +
+                "2.0 Biologi Sel dan Organisasi Sel,Apakah organel penjana tenaga ATP?,Mitokondrion,Dikenali sebagai powerhouse sel\n";
+
+            const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "templat_flashcard_biologi_spm.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function exportCSV() {
+            const cards = getCurrentCards();
+            if (cards.length === 0) {
+                showToast("Tiada kad imbas untuk dieksport.", "error");
+                return;
+            }
+
+            const title = getTopicTitleFromSyllabus(currentTopicKey);
+            const bom = String.fromCharCode(0xFEFF);
+            let csvContent = bom + "BIDANG PEMBELAJARAN,SOALAN,JAWAPAN,PETUNJUK\n";
+
+            cards.forEach(c => {
+                const q = `"${c.soalan.replace(/"/g, '""')}"`;
+                const a = `"${c.jawapan.replace(/"/g, '""')}"`;
+                const h = `"${(c.hint || '').replace(/"/g, '""')}"`;
+                csvContent += `"${title}",${q},${a},${h}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `flashcard_${currentTopicKey}_export.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showToast("Dek berjaya dieksport!", "success");
+        }
+
+        function showToast(message, type = "info") {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+
+            let typeStyles = "bg-slate-800 border-slate-700 text-slate-100";
+            let icon = "fa-circle-info text-sky-400";
+
+            if (type === "success") {
+                typeStyles = "bg-emerald-950 border-emerald-500 text-emerald-100";
+                icon = "fa-circle-check text-emerald-400";
+            } else if (type === "error") {
+                typeStyles = "bg-rose-950 border-rose-500 text-rose-100";
+                icon = "fa-circle-exclamation text-rose-400";
+            }
+
+            toast.className = `pointer-events-auto flex items-center space-x-3 px-4 py-3 rounded-2xl border shadow-2xl text-xs sm:text-sm font-semibold transform transition-all duration-300 opacity-0 translate-y-2 ${typeStyles}`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i><span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        window.handleRoleToggle = handleRoleToggle;
+        window.openAdminModal = openAdminModal;
+        window.closeAdminModal = closeAdminModal;
+        window.verifyAdminPassword = verifyAdminPassword;
+        window.updateRoleUI = updateRoleUI;
+        window.openStudentEmailModal = openStudentEmailModal;
+        window.closeStudentEmailModal = closeStudentEmailModal;
+        window.handleStudentEmailSubmit = handleStudentEmailSubmit;
+        window.openFirebaseSettingsModal = openFirebaseSettingsModal;
+        window.closeFirebaseSettingsModal = closeFirebaseSettingsModal;
+        window.handleFirebaseSettingsSubmit = handleFirebaseSettingsSubmit;
+        window.clearFirebaseConfig = clearFirebaseConfig;
+        window.openCSVModal = openCSVModal;
+        window.closeCSVModal = closeCSVModal;
+        window.openAddCardModal = openAddCardModal;
+        window.closeAddCardModal = closeAddCardModal;
+        window.handleAddCardSubmit = handleAddCardSubmit;
+        window.onTopicChange = onTopicChange;
+        window.switchMode = switchMode;
+        window.flipCard = flipCard;
+        window.toggleHint = toggleHint;
+        window.prevCard = prevCard;
+        window.nextCard = nextCard;
+        window.toggleMastered = toggleMastered;
+        window.nextQuizQuestion = nextQuizQuestion;
+        window.checkTypingAnswer = checkTypingAnswer;
+        window.showTypingHint = showTypingHint;
+        window.initMatchingGame = initMatchingGame;
+        window.handleCSVUpload = handleCSVUpload;
+        window.downloadCSVTemplate = downloadCSVTemplate;
+        window.exportCSV = exportCSV;
+    </script>
+</body>
+</html>
